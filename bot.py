@@ -1,3 +1,9 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()       # читает .env в корне проекта
+API_TOKEN = os.getenv("TOKEN")
+
 import logging
 import sqlite3
 from aiogram import Bot, Dispatcher, executor, types
