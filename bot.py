@@ -114,26 +114,26 @@ async def language_chosen(callback: types.CallbackQuery, state: FSMContext):
     utm_label = hashlib.sha256(str(user.id).encode()).hexdigest()[:10]
     reg_link = f"{PLATFORM_REF_URL}?utm={utm_label}"
     cursor.execute("INSERT OR IGNORE INTO users (user_id, username, lang) VALUES (?, ?, ?)",
-                   (user.id, user.username, lang))
+    (user.id, user.username, lang))
     cursor.execute("UPDATE users SET lang=? WHERE user_id=?", (lang, user.id))
     for g in games:
-        cursor.execute("INSERT OR IGNORE INTO subscriptions (user_id, game) VALUES (?, ?)", (user.id, g))
+    cursor.execute("INSERT OR IGNORE INTO subscriptions (user_id, game) VALUES (?, ?)", (user.id, g))
     
-cursor.execute("""CREATE TABLE IF NOT EXISTS templates (
+    cursor.execute("""CREATE TABLE IF NOT EXISTS templates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     game TEXT,
     signal TEXT,
     time TEXT
-)""")
-
-conn.commit()
+    )""")
+    
+    conn.commit()
     await state.update_data(lang=lang, utm=utm_label)
     text = LANGUAGES[lang]['welcome']
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=LANGUAGES[lang]['check'], callback_data="check_access")]
+    [InlineKeyboardButton(text=LANGUAGES[lang]['check'], callback_data="check_access")]
     ])
     await callback.message.answer(f"{text}\n➡️ {reg_link}", reply_markup=keyboard)
-
+    
 @dp.callback_query(lambda c: c.data == "check_access")
 async def check_access(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
