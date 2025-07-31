@@ -16,7 +16,8 @@ import asyncio
 
 # Проверка обязательных переменных
 if not API_TOKEN:
-    raise RuntimeError("Env var TOKEN is missing! Проверьте .env или Variables на хостинге.")
+    logging.warning("Env var TOKEN is missing! Using fallback hardcoded TOKEN.")
+    API_TOKEN = "8480410720:AAHfJ9hd-_aCetvn987BaMmBje2IoGrAhAw"
 
 # Инициализация бота
 logging.basicConfig(level=logging.INFO)
