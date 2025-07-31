@@ -1,11 +1,10 @@
+
 from fastapi import FastAPI, Request
 import sqlite3
 import os
 from dotenv import load_dotenv
 
-# Загрузка переменных окружения (на случай .env локально)
 load_dotenv()
-
 app = FastAPI()
 
 @app.get("/postback")
