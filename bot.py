@@ -18,13 +18,13 @@ import aioschedule
 
 # --------------- ПЛАТФОРМА 1WIN ------------------
 PLATFORM_NAME = "1win"
-PLATFORM_REF_URL = "https://1winclick.link/YOUR_REF"
+PLATFORM_REF_URL = "https://lkis.cc/0105"
 PLATFORM_API_KEY = os.getenv("PLATFORM_API_KEY")
 PLATFORM_API_URL = "https://partner.1win.xyz/api/v1/stats"
 
 TOKEN = os.getenv("TOKEN")
-CHANNEL_USERNAME = "@your_channel"
-ADMIN_IDS = [123456789]  # замените на реальные ID
+CHANNEL_USERNAME = "@trghfssh"
+ADMIN_IDS = [8298051618]  # замените на реальные ID
 
 # ----------- ИГРЫ -------------------
 crash_games = ["Aviator", "Lucky Jet", "Avia Masters", "Astronaut"]
