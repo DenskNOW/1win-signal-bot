@@ -1,35 +1,24 @@
-
 import os
-import logging
-import asyncio
-import sqlite3
-from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.utils import executor
 from dotenv import load_dotenv
-import aioschedule
 
-load_dotenv()
+load_dotenv()       # читает .env в корне проекта
+API_TOKEN = os.getenv("8480410720:AAHfJ9hd-_aCetvn987BaMmBje2IoGrAhAw")
 
-API_TOKEN = os.getenv("TOKEN")
-if not API_TOKEN:
-    logging.warning("Env var TOKEN is missing! Using fallback hardcoded TOKEN.")
-    API_TOKEN = "8480410720:AAHfJ9hd-_aCetvn987BaMmBje2IoGrAhAw"
+import logging
+import sqlite3
+from aiogram import Bot, Dispatcher, executor, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+import os
 
-raw_admin = os.getenv("ADMIN_ID")
-if not raw_admin:
-    logging.warning("Env var ADMIN_ID is missing! Using fallback 8298051618.")
-    ADMIN_ID = 8298051618
-else:
-    ADMIN_ID = int(raw_admin)
-
-CHANNEL_ID = os.getenv("CHANNEL_ID") or "@your_channel"
+API_TOKEN = os.getenv("8480410720:AAHfJ9hd-_aCetvn987BaMmBje2IoGrAhAw")
+ADMIN_ID = int(os.getenv("8298051618", "123456789"))
+CHANNEL_ID = os.getenv("@trghfssh", "@your_channel")
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN, parse_mode="HTML")
 dp = Dispatcher(bot, storage=MemoryStorage())
 
-os.makedirs("db", exist_ok=True)
+# База данных
 conn = sqlite3.connect("db/database.db")
 cursor = conn.cursor()
 cursor.execute("""
@@ -47,12 +36,10 @@ conn.commit()
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
     username = message.from_user.username or ""
-    cursor.execute(
-        "INSERT OR IGNORE INTO users (user_id, username, lang) VALUES (?, ?, ?)",
-        (user_id, username, "ru")
-    )
+    cursor.execute("INSERT OR IGNORE INTO users (user_id, username, lang) VALUES (?, ?, ?)",
+                   (user_id, username, "ru"))
     conn.commit()
-    await message.answer("Добро пожаловать! Проверяем подписку...")
+    await message.answer("👋 Добро пожаловать! Проверяем подписку...")
 
 @dp.message_handler(commands=["admin"])
 async def cmd_admin(message: types.Message):
@@ -60,8 +47,8 @@ async def cmd_admin(message: types.Message):
         return
     cursor.execute("SELECT COUNT(*) FROM users")
     total = cursor.fetchone()[0]
-    await message.answer(f"Админ-панель
-Всего пользователей: {total}")
+    await message.answer(f"""""👮 Админ-панель
+Всего пользователей: {total}""")
 
 @dp.message_handler(commands=["send"])
 async def send_signal(message: types.Message):
@@ -71,26 +58,28 @@ async def send_signal(message: types.Message):
     if not text:
         await message.answer("Введите текст сигнала: /send Сигнал...")
         return
-    cursor.execute("SELECT user_id FROM users WHERE deposited = 1")
+    cursor.execute("SELECT user_id FROM users")
     for (uid,) in cursor.fetchall():
         try:
-            await bot.send_message(uid, f"Сигнал:
-{text}")
-        except Exception:
+            await bot.send_message(uid, f"""📡 <b>Сигнал:</b>
+{text}""")
+        except:
             continue
-    await message.answer("Сигнал отправлен.")
+    await message.answer("✅ Сигнал отправлен.")
+
+if __name__ == '__main__':
+    from aiogram import executor
+    executor.start_polling(dp, skip_updates=True)
+
+import aioschedule
+import asyncio
 
 async def scheduled_job():
     cursor.execute("SELECT user_id FROM users WHERE deposited = 1")
     for (uid,) in cursor.fetchall():
         try:
-            await bot.send_message(
-                uid,
-                "Авто-сигнал:
-Игра: Aviator
-Коэффициент: 1.75"
-            )
-        except Exception:
+            await bot.send_message(uid, "📡 <b>Авто-сигнал:</b>\nИгра: Aviator\nКоэффициент: 1.75")
+        except:
             continue
 
 async def scheduler():
@@ -100,6 +89,7 @@ async def scheduler():
         await asyncio.sleep(30)
 
 if __name__ == '__main__':
+    from aiogram import executor
     loop = asyncio.get_event_loop()
     loop.create_task(scheduler())
     executor.start_polling(dp, skip_updates=True)
