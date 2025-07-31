@@ -1,7 +1,10 @@
 import os
+import logging
 from dotenv import load_dotenv
 
 # Загрузка переменных окружения
+load_dotenv()
+
 load_dotenv()
 
 # TOKEN
