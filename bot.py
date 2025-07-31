@@ -1,24 +1,30 @@
 import os
-from dotenv import load_dotenv
-
-load_dotenv()       # читает .env в корне проекта
-API_TOKEN = os.getenv("8480410720:AAHfJ9hd-_aCetvn987BaMmBje2IoGrAhAw")
-
 import logging
 import sqlite3
+import asyncio
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-import os
+import aioschedule
+from dotenv import load_dotenv
 
-API_TOKEN = os.getenv("8480410720:AAHfJ9hd-_aCetvn987BaMmBje2IoGrAhAw")
-ADMIN_ID = int(os.getenv("8298051618", "123456789"))
-CHANNEL_ID = os.getenv("@trghfssh", "@your_channel")
+# Загрузка .env
+load_dotenv()
 
+# Получение переменных окружения
+API_TOKEN = os.getenv("TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID", "8298051618"))
+CHANNEL_ID = os.getenv("CHANNEL_ID", "@your_channel")
+
+if not API_TOKEN:
+    raise RuntimeError("Env var TOKEN is missing!")
+
+# Инициализация бота
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN, parse_mode="HTML")
 dp = Dispatcher(bot, storage=MemoryStorage())
 
-# База данных
+# Подключение к БД
+os.makedirs("db", exist_ok=True)
 conn = sqlite3.connect("db/database.db")
 cursor = conn.cursor()
 cursor.execute("""
@@ -32,64 +38,27 @@ CREATE TABLE IF NOT EXISTS users (
 """)
 conn.commit()
 
+# /start
 @dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
     username = message.from_user.username or ""
-    cursor.execute("INSERT OR IGNORE INTO users (user_id, username, lang) VALUES (?, ?, ?)",
-                   (user_id, username, "ru"))
+    cursor.execute(
+        "INSERT OR IGNORE INTO users (user_id, username, lang) VALUES (?, ?, ?)",
+        (user_id, username, "ru")
+    )
     conn.commit()
     await message.answer("👋 Добро пожаловать! Проверяем подписку...")
 
+# /admin
 @dp.message_handler(commands=["admin"])
 async def cmd_admin(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
     cursor.execute("SELECT COUNT(*) FROM users")
     total = cursor.fetchone()[0]
-    await message.answer(f"""""👮 Админ-панель
-Всего пользователей: {total}""")
+    await message.answer(f"👮 Админ-панель\nВсего пользователей: {total}")
 
+# /send
 @dp.message_handler(commands=["send"])
-async def send_signal(message: types.Message):
-    if message.from_user.id != ADMIN_ID:
-        return
-    text = message.get_args()
-    if not text:
-        await message.answer("Введите текст сигнала: /send Сигнал...")
-        return
-    cursor.execute("SELECT user_id FROM users")
-    for (uid,) in cursor.fetchall():
-        try:
-            await bot.send_message(uid, f"""📡 <b>Сигнал:</b>
-{text}""")
-        except:
-            continue
-    await message.answer("✅ Сигнал отправлен.")
-
-if __name__ == '__main__':
-    from aiogram import executor
-    executor.start_polling(dp, skip_updates=True)
-
-import aioschedule
-import asyncio
-
-async def scheduled_job():
-    cursor.execute("SELECT user_id FROM users WHERE deposited = 1")
-    for (uid,) in cursor.fetchall():
-        try:
-            await bot.send_message(uid, "📡 <b>Авто-сигнал:</b>\nИгра: Aviator\nКоэффициент: 1.75")
-        except:
-            continue
-
-async def scheduler():
-    aioschedule.every(10).minutes.do(scheduled_job)
-    while True:
-        await aioschedule.run_pending()
-        await asyncio.sleep(30)
-
-if __name__ == '__main__':
-    from aiogram import executor
-    loop = asyncio.get_event_loop()
-    loop.create_task(scheduler())
-    executor.start_polling(dp, skip_updates=True)
+async def send
