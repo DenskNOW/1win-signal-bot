@@ -41,12 +41,13 @@ games = crash_games + mines_games + other_games
 conn = sqlite3.connect("users.db")
 cursor = conn.cursor()
 
-    cursor.execute("""CREATE TABLE IF NOT EXISTS users (\nuser_id INTEGER PRIMARY KEY,\nusername TEXT,\nlang TEXT,\nregistered INTEGER DEFAULT 0,\ndeposited INTEGER DEFAULT 0\n)""")\n
-    cursor.execute("""CREATE TABLE IF NOT EXISTS subscriptions (\nuser_id INTEGER,\ngame TEXT\n)""")\n
-    cursor.execute("""CREATE TABLE IF NOT EXISTS signals (\nid INTEGER PRIMARY KEY AUTOINCREMENT,\ngame TEXT,\nsignal TEXT,\ntimestamp DATETIME DEFAULT CURRENT_TIMESTAMP\n)""")\n
-
-    cursor.execute("""CREATE TABLE IF NOT EXISTS templates (\nid INTEGER PRIMARY KEY AUTOINCREMENT,\ngame TEXT,\nsignal TEXT,\ntime TEXT\n)""")\n
-
+    cursor.execute("""CREATE TABLE IF NOT EXISTS users (
+        user_id INTEGER PRIMARY KEY,
+        username TEXT,
+        lang TEXT,
+        registered INTEGER DEFAULT 0,
+        deposited INTEGER DEFAULT 0
+    )""")
 conn.commit()
 
 # ----------- ЯЗЫКИ ------------
