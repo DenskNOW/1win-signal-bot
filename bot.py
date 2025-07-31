@@ -163,7 +163,6 @@ conn.commit()
     if reg and dep:
         await callback.message.answer(LANGUAGES[lang]['access_granted'])
 await callback.message.answer("📡 <b>Сигналы:</b>\n🎯 Aviator: 1.75 через 2 мин\n💥 Dice: Red через 3 хода")
-💥 Dice: Red через 3 хода")
     else:
         await callback.message.answer(LANGUAGES[lang]['access_denied'])
 
