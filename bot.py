@@ -41,30 +41,11 @@ games = crash_games + mines_games + other_games
 conn = sqlite3.connect("users.db")
 cursor = conn.cursor()
 
-cursor.execute("""CREATE TABLE IF NOT EXISTS users (
-    user_id INTEGER PRIMARY KEY,
-    username TEXT,
-    lang TEXT,
-    registered INTEGER DEFAULT 0,
-    deposited INTEGER DEFAULT 0
-)""")
-cursor.execute("""CREATE TABLE IF NOT EXISTS subscriptions (
-    user_id INTEGER,
-    game TEXT
-)""")
-cursor.execute("""CREATE TABLE IF NOT EXISTS signals (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    game TEXT,
-    signal TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS users (\nuser_id INTEGER PRIMARY KEY,\nusername TEXT,\nlang TEXT,\nregistered INTEGER DEFAULT 0,\ndeposited INTEGER DEFAULT 0\n)""")\n
+    cursor.execute("""CREATE TABLE IF NOT EXISTS subscriptions (\nuser_id INTEGER,\ngame TEXT\n)""")\n
+    cursor.execute("""CREATE TABLE IF NOT EXISTS signals (\nid INTEGER PRIMARY KEY AUTOINCREMENT,\ngame TEXT,\nsignal TEXT,\ntimestamp DATETIME DEFAULT CURRENT_TIMESTAMP\n)""")\n
 
-cursor.execute("""CREATE TABLE IF NOT EXISTS templates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    game TEXT,
-    signal TEXT,
-    time TEXT
-)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS templates (\nid INTEGER PRIMARY KEY AUTOINCREMENT,\ngame TEXT,\nsignal TEXT,\ntime TEXT\n)""")\n
 
 conn.commit()
 
@@ -119,12 +100,7 @@ async def language_chosen(callback: types.CallbackQuery, state: FSMContext):
     for g in games:
     cursor.execute("INSERT OR IGNORE INTO subscriptions (user_id, game) VALUES (?, ?)", (user.id, g))
     
-    cursor.execute("""CREATE TABLE IF NOT EXISTS templates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    game TEXT,
-    signal TEXT,
-    time TEXT
-    )""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS templates (\nid INTEGER PRIMARY KEY AUTOINCREMENT,\ngame TEXT,\nsignal TEXT,\ntime TEXT\n)""")\n
     
     conn.commit()
     await state.update_data(lang=lang, utm=utm_label)
@@ -152,12 +128,7 @@ async def check_access(callback: types.CallbackQuery, state: FSMContext):
     cursor.execute("UPDATE users SET registered=?, deposited=? WHERE user_id=?",
                    (int(reg), int(dep), user_id))
     
-cursor.execute("""CREATE TABLE IF NOT EXISTS templates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    game TEXT,
-    signal TEXT,
-    time TEXT
-)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS templates (\nid INTEGER PRIMARY KEY AUTOINCREMENT,\ngame TEXT,\nsignal TEXT,\ntime TEXT\n)""")\n
 
 conn.commit()
     if reg and dep:
@@ -258,12 +229,7 @@ async def admin_add_signal_input(message: types.Message):
         game, signal = map(str.strip, message.text.split("|", 1))
         cursor.execute("INSERT INTO signals (game, signal) VALUES (?, ?)", (game, signal))
         
-cursor.execute("""CREATE TABLE IF NOT EXISTS templates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    game TEXT,
-    signal TEXT,
-    time TEXT
-)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS templates (\nid INTEGER PRIMARY KEY AUTOINCREMENT,\ngame TEXT,\nsignal TEXT,\ntime TEXT\n)""")\n
 
 conn.commit()
         await message.answer(f"✅ Сигнал добавлен: {game} — {signal}")
@@ -295,12 +261,7 @@ async def run_template_dispatch():
         if tpl["time"] == now:
             cursor.execute("INSERT INTO signals (game, signal) VALUES (?, ?)", (tpl["game"], tpl["signal"]))
             
-cursor.execute("""CREATE TABLE IF NOT EXISTS templates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    game TEXT,
-    signal TEXT,
-    time TEXT
-)""")
+    cursor.execute("""CREATE TABLE IF NOT EXISTS templates (\nid INTEGER PRIMARY KEY AUTOINCREMENT,\ngame TEXT,\nsignal TEXT,\ntime TEXT\n)""")\n
 
 conn.commit()
             logging.info(f"📌 Шаблонный сигнал добавлен: {tpl['game']} — {tpl['signal']}")
@@ -312,46 +273,7 @@ async def old_show_templates(callback: types.CallbackQuery):
     for tpl in signal_templates:
         text += f"🎮 {tpl['game']} — {tpl['signal']} в {tpl['time']}\n"
     await callback.message.answer(text)
-    await callback.message.answer("➕ Чтобы добавить шаблон, пришли:
-    await bot.session.storage.set_data(callback.from_user.id, {"awaiting_template": True})
-
-@dp.message(lambda msg: msg.from_user.id in ADMIN_IDS)
-async def handle_template_add(message: types.Message):
-    state = await bot.session.storage.get_data(message.from_user.id)
-    if not state or not state.get("awaiting_template"):
-        return
-    try:
-        game, signal, time = map(str.strip, message.text.split("|", 2))
-        cursor.execute("INSERT INTO templates (game, signal, time) VALUES (?, ?, ?)", (game, signal, time))
-        conn.commit()
-        signal_templates.append({"game": game, "signal": signal, "time": time})
-        await message.answer(f"✅ Шаблон добавлен: {game} — {signal} в {time}")
-        await bot.session.storage.set_data(message.from_user.id, {})
-    except:
-        await message.answer("❌ Неверный формат. Используй: <игра> | <сигнал> | <время>")
-
-@dp.callback_query(lambda c: c.data.startswith("delete_template_"))
-async def delete_template(callback: types.CallbackQuery):
-    try:
-        index = int(callback.data.split("_")[-1])
-        tpl = signal_templates.pop(index)
-    cursor.execute("DELETE FROM templates WHERE game=? AND signal=? AND time=?", (tpl['game'], tpl['signal'], tpl['time']))
-    conn.commit()
-        await callback.message.answer(f"🗑 Удалён шаблон: {tpl['game']} — {tpl['signal']} в {tpl['time']}")
-    except Exception as e:
-        await callback.message.answer("❌ Ошибка при удалении шаблона.")
-
-@dp.callback_query(lambda c: c.data == "admin_templates")
-async def show_templates(callback: types.CallbackQuery):
-    text = "🧾 Текущие шаблоны сигналов:\n"
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
-    for i, tpl in enumerate(signal_templates):
-        text += f"{i}. 🎮 {tpl['game']} — {tpl['signal']} в {tpl['time']}\n"
-        keyboard.inline_keyboard.append([
-            InlineKeyboardButton(text=f"❌ Удалить {i}", callback_data=f"delete_template_{i}")
-        ])
-    await callback.message.answer(text, reply_markup=keyboard)
-    await callback.message.answer("➕ Чтобы добавить шаблон, пришли:
+    await callback.message.answer("➕ Чтобы добавить шаблон, пришли:\nawait bot.session.storage.set_data(callback.from_user.id, {"awaiting_template": True})\n\n@dp.message(lambda msg: msg.from_user.id in ADMIN_IDS)\nasync def handle_template_add(message: types.Message):\nstate = await bot.session.storage.get_data(message.from_user.id)\nif not state or not state.get("awaiting_template"):\nreturn\ntry:\ngame, signal, time = map(str.strip, message.text.split("|", 2))\ncursor.execute("INSERT INTO templates (game, signal, time) VALUES (?, ?, ?)", (game, signal, time))\nconn.commit()\nsignal_templates.append({"game": game, "signal": signal, "time": time})\nawait message.answer(f"✅ Шаблон добавлен: {game} — {signal} в {time}")\nawait bot.session.storage.set_data(message.from_user.id, {})\nexcept:\nawait message.answer("❌ Неверный формат. Используй: <игра> | <сигнал> | <время>")\n\n@dp.callback_query(lambda c: c.data.startswith("delete_template_"))\nasync def delete_template(callback: types.CallbackQuery):\ntry:\nindex = int(callback.data.split("_")[-1])\ntpl = signal_templates.pop(index)\ncursor.execute("DELETE FROM templates WHERE game=? AND signal=? AND time=?", (tpl['game'], tpl['signal'], tpl['time']))\nconn.commit()\nawait callback.message.answer(f"🗑 Удалён шаблон: {tpl['game']} — {tpl['signal']} в {tpl['time']}")\nexcept Exception as e:\nawait callback.message.answer("❌ Ошибка при удалении шаблона.")\n\n@dp.callback_query(lambda c: c.data == "admin_templates")\nasync def show_templates(callback: types.CallbackQuery):\ntext = "🧾 Текущие шаблоны сигналов:\n"\nkeyboard = InlineKeyboardMarkup(inline_keyboard=[])\nfor i, tpl in enumerate(signal_templates):\ntext += f"{i}. 🎮 {tpl['game']} — {tpl['signal']} в {tpl['time']}\n"\nkeyboard.inline_keyboard.append([\nInlineKeyboardButton(text=f"❌ Удалить {i}", callback_data=f"delete_template_{i}")\n])\nawait callback.message.answer(text, reply_markup=keyboard)\nawait callback.message.answer("➕ Чтобы добавить шаблон, пришли:\n
     await bot.session.storage.set_data(callback.from_user.id, {"awaiting_template": True})
 
 def load_templates():
