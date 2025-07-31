@@ -1,3 +1,4 @@
+import datetime
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -18,13 +19,13 @@ import aioschedule
 
 # --------------- ПЛАТФОРМА 1WIN ------------------
 PLATFORM_NAME = "1win"
-PLATFORM_REF_URL = "https://lkis.cc/0105"
+PLATFORM_REF_URL = "https://1winclick.link/YOUR_REF"
 PLATFORM_API_KEY = os.getenv("PLATFORM_API_KEY")
 PLATFORM_API_URL = "https://partner.1win.xyz/api/v1/stats"
 
 TOKEN = os.getenv("TOKEN")
-CHANNEL_USERNAME = "@trghfssh"
-ADMIN_IDS = [8298051618]  # замените на реальные ID
+CHANNEL_USERNAME = "@your_channel"
+ADMIN_IDS = [123456789]  # замените на реальные ID
 
 # ----------- ИГРЫ -------------------
 crash_games = ["Aviator", "Lucky Jet", "Avia Masters", "Astronaut"]
@@ -57,6 +58,14 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS signals (
     signal TEXT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
 )""")
+
+cursor.execute("""CREATE TABLE IF NOT EXISTS templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    game TEXT,
+    signal TEXT,
+    time TEXT
+)""")
+
 conn.commit()
 
 # ----------- ЯЗЫКИ ------------
@@ -109,7 +118,15 @@ async def language_chosen(callback: types.CallbackQuery, state: FSMContext):
     cursor.execute("UPDATE users SET lang=? WHERE user_id=?", (lang, user.id))
     for g in games:
         cursor.execute("INSERT OR IGNORE INTO subscriptions (user_id, game) VALUES (?, ?)", (user.id, g))
-    conn.commit()
+    
+cursor.execute("""CREATE TABLE IF NOT EXISTS templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    game TEXT,
+    signal TEXT,
+    time TEXT
+)""")
+
+conn.commit()
     await state.update_data(lang=lang, utm=utm_label)
     text = LANGUAGES[lang]['welcome']
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -134,10 +151,20 @@ async def check_access(callback: types.CallbackQuery, state: FSMContext):
     reg, dep = await is_registered_and_deposited(utm)
     cursor.execute("UPDATE users SET registered=?, deposited=? WHERE user_id=?",
                    (int(reg), int(dep), user_id))
-    conn.commit()
+    
+cursor.execute("""CREATE TABLE IF NOT EXISTS templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    game TEXT,
+    signal TEXT,
+    time TEXT
+)""")
+
+conn.commit()
     if reg and dep:
         await callback.message.answer(LANGUAGES[lang]['access_granted'])
-        await callback.message.answer("📡 <b>Сигналы:</b>\\n🎯 Aviator: 1.75 через 2 мин\\n💥 Dice: Red через 3 хода")
+        await callback.message.answer("📡 <b>Сигналы:</b>
+🎯 Aviator: 1.75 через 2 мин
+💥 Dice: Red через 3 хода")
     else:
         await callback.message.answer(LANGUAGES[lang]['access_denied'])
 
@@ -161,3 +188,180 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+
+# ВСТАВЬ СЮДА: все импорты и настройки .env как раньше
+
+# ЛОГИРОВАНИЕ В ФАЙЛ
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("bot.log"),
+        logging.StreamHandler()
+    ]
+)
+
+# Функция рассылки сигналов
+async def send_scheduled_signals():
+    cursor.execute("SELECT game, signal FROM signals ORDER BY id DESC LIMIT 1")
+    row = cursor.fetchone()
+    if not row:
+        return
+    game, signal = row
+    msg = f"📡 <b>Сигнал:</b>\n🎮 {game}: {signal}"
+
+    cursor.execute("SELECT user_id FROM subscriptions WHERE game=?", (game,))
+    users = cursor.fetchall()
+
+    for (uid,) in users:
+        cursor.execute("SELECT deposited FROM users WHERE user_id=?", (uid,))
+        dep = cursor.fetchone()
+        if dep and dep[0]:
+            try:
+                await bot.send_message(uid, msg)
+                logging.info(f"✅ Сигнал отправлен {uid}")
+            except Exception as e:
+                logging.warning(f"⚠️ Не удалось отправить пользователю {uid}: {e}")
+
+# Планировщик
+import aioschedule
+
+async def scheduler():
+    aioschedule.every(1).minutes.do(run_template_dispatch)
+    aioschedule.every(10).minutes.do(send_scheduled_signals)
+    while True:
+        await aioschedule.run_pending()
+        await asyncio.sleep(1)
+
+# Команда админа
+@dp.message(lambda msg: msg.text == "/admin" and msg.from_user.id in ADMIN_IDS)
+async def admin_panel(message: types.Message):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="➕ Добавить сигнал", callback_data="admin_add_signal")],
+        [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats"),
+        InlineKeyboardButton(text="🧾 Шаблоны", callback_data="admin_templates")]
+    ])
+    await message.answer("🛠 Админ-панель", reply_markup=keyboard)
+
+@dp.callback_query(lambda c: c.data == "admin_add_signal")
+async def admin_add_signal_start(callback: types.CallbackQuery):
+    await callback.message.answer("📥 Введите сигнал в формате:
+<игра> | <сигнал>")
+    await bot.session.storage.set_data(callback.from_user.id, {"awaiting_signal": True})
+
+@dp.message(lambda msg: msg.from_user.id in ADMIN_IDS)
+async def admin_add_signal_input(message: types.Message):
+    state = await bot.session.storage.get_data(message.from_user.id)
+    if not state or not state.get("awaiting_signal"):
+        return
+    try:
+        game, signal = map(str.strip, message.text.split("|", 1))
+        cursor.execute("INSERT INTO signals (game, signal) VALUES (?, ?)", (game, signal))
+        
+cursor.execute("""CREATE TABLE IF NOT EXISTS templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    game TEXT,
+    signal TEXT,
+    time TEXT
+)""")
+
+conn.commit()
+        await message.answer(f"✅ Сигнал добавлен: {game} — {signal}")
+        await bot.session.storage.set_data(message.from_user.id, {})
+    except:
+        await message.answer("❌ Неверный формат. Используй: <игра> | <сигнал>")
+
+# ЗАМЕНА main():
+async def main():
+    logging.info("🚀 Бот запускается...")
+    await asyncio.gather(
+        dp.start_polling(bot),
+        scheduler()
+    )
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+# --------- ШАБЛОННЫЕ СИГНАЛЫ ---------
+signal_templates_data = [
+    {"game": "Aviator", "signal": "1.90 через 3 мин", "time": "10:00"},
+    {"game": "Dice", "signal": "Red через 5 ходов", "time": "14:30"},
+    {"game": "Football X", "signal": "x2.0 через 1 матч", "time": "18:45"},
+]
+
+async def run_template_dispatch():
+    now = datetime.datetime.now().strftime("%H:%M")
+    for tpl in signal_templates:
+        if tpl["time"] == now:
+            cursor.execute("INSERT INTO signals (game, signal) VALUES (?, ?)", (tpl["game"], tpl["signal"]))
+            
+cursor.execute("""CREATE TABLE IF NOT EXISTS templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    game TEXT,
+    signal TEXT,
+    time TEXT
+)""")
+
+conn.commit()
+            logging.info(f"📌 Шаблонный сигнал добавлен: {tpl['game']} — {tpl['signal']}")
+
+# --------- УПРАВЛЕНИЕ ШАБЛОНАМИ ---------
+@dp.callback_query(lambda c: c.data == "admin_templates")
+async def old_show_templates(callback: types.CallbackQuery):
+    text = "🧾 Текущие шаблоны сигналов:\n"
+    for tpl in signal_templates:
+        text += f"🎮 {tpl['game']} — {tpl['signal']} в {tpl['time']}\n"
+    await callback.message.answer(text)
+    await callback.message.answer("➕ Чтобы добавить шаблон, пришли:
+<игра> | <сигнал> | <время (HH:MM)>")
+    await bot.session.storage.set_data(callback.from_user.id, {"awaiting_template": True})
+
+@dp.message(lambda msg: msg.from_user.id in ADMIN_IDS)
+async def handle_template_add(message: types.Message):
+    state = await bot.session.storage.get_data(message.from_user.id)
+    if not state or not state.get("awaiting_template"):
+        return
+    try:
+        game, signal, time = map(str.strip, message.text.split("|", 2))
+        cursor.execute("INSERT INTO templates (game, signal, time) VALUES (?, ?, ?)", (game, signal, time))
+        conn.commit()
+        signal_templates.append({"game": game, "signal": signal, "time": time})
+        await message.answer(f"✅ Шаблон добавлен: {game} — {signal} в {time}")
+        await bot.session.storage.set_data(message.from_user.id, {})
+    except:
+        await message.answer("❌ Неверный формат. Используй: <игра> | <сигнал> | <время>")
+
+@dp.callback_query(lambda c: c.data.startswith("delete_template_"))
+async def delete_template(callback: types.CallbackQuery):
+    try:
+        index = int(callback.data.split("_")[-1])
+        tpl = signal_templates.pop(index)
+    cursor.execute("DELETE FROM templates WHERE game=? AND signal=? AND time=?", (tpl['game'], tpl['signal'], tpl['time']))
+    conn.commit()
+        await callback.message.answer(f"🗑 Удалён шаблон: {tpl['game']} — {tpl['signal']} в {tpl['time']}")
+    except Exception as e:
+        await callback.message.answer("❌ Ошибка при удалении шаблона.")
+
+@dp.callback_query(lambda c: c.data == "admin_templates")
+async def show_templates(callback: types.CallbackQuery):
+    text = "🧾 Текущие шаблоны сигналов:\n"
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+    for i, tpl in enumerate(signal_templates):
+        text += f"{i}. 🎮 {tpl['game']} — {tpl['signal']} в {tpl['time']}\n"
+        keyboard.inline_keyboard.append([
+            InlineKeyboardButton(text=f"❌ Удалить {i}", callback_data=f"delete_template_{i}")
+        ])
+    await callback.message.answer(text, reply_markup=keyboard)
+    await callback.message.answer("➕ Чтобы добавить шаблон, пришли:
+<игра> | <сигнал> | <время (HH:MM)>")
+    await bot.session.storage.set_data(callback.from_user.id, {"awaiting_template": True})
+
+def load_templates():
+    cursor.execute("SELECT game, signal, time FROM templates")
+    rows = cursor.fetchall()
+    return [{"game": r[0], "signal": r[1], "time": r[2]} for r in rows]
+
+signal_templates = load_templates()
