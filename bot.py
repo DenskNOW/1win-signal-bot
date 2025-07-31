@@ -56,7 +56,7 @@ async def send_signal(message: types.Message):
     for (uid,) in cursor.fetchall():
         try:
             await bot.send_message(uid, f"""📡 <b>Сигнал:</b>
-{text}"""))
+{text}""")
         except:
             continue
     await message.answer("✅ Сигнал отправлен.")
