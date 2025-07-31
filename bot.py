@@ -41,8 +41,8 @@ async def cmd_admin(message: types.Message):
         return
     cursor.execute("SELECT COUNT(*) FROM users")
     total = cursor.fetchone()[0]
-    await message.answer(f"👮 Админ-панель
-Всего пользователей: {total}")
+    await message.answer(f"""""👮 Админ-панель
+Всего пользователей: {total}""")"")
 
 @dp.message_handler(commands=["send"])
 async def send_signal(message: types.Message):
