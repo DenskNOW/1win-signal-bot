@@ -55,8 +55,8 @@ async def send_signal(message: types.Message):
     cursor.execute("SELECT user_id FROM users")
     for (uid,) in cursor.fetchall():
         try:
-            await bot.send_message(uid, f"📡 <b>Сигнал:</b>
-{text}")
+            await bot.send_message(uid, f"""📡 <b>Сигнал:</b>
+{text}"""))
         except:
             continue
     await message.answer("✅ Сигнал отправлен.")
