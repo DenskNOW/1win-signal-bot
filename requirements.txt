@@ -1,4 +1,6 @@
-aiogram==3.3.0
-aioschedule==0.5.2
-requests
+aiogram==2.25.1
 python-dotenv
+fastapi
+uvicorn
+
+aioschedule
