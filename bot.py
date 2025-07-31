@@ -3,21 +3,23 @@ from dotenv import load_dotenv
 
 # Загрузка переменных окружения
 load_dotenv()
+
+# TOKEN
 API_TOKEN = os.getenv("TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "123456789"))
-CHANNEL_ID = os.getenv("CHANNEL_ID", "@your_channel")
-
-import logging
-import sqlite3
-from aiogram import Bot, Dispatcher, executor, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-import aioschedule
-import asyncio
-
-# Проверка обязательных переменных
 if not API_TOKEN:
     logging.warning("Env var TOKEN is missing! Using fallback hardcoded TOKEN.")
     API_TOKEN = "8480410720:AAHfJ9hd-_aCetvn987BaMmBje2IoGrAhAw"
+
+# ADMIN_ID
+raw_admin = os.getenv("ADMIN_ID")
+if not raw_admin:
+    logging.warning("Env var ADMIN_ID is missing! Using fallback 8298051618.")
+    ADMIN_ID = 8298051618
+else:
+    ADMIN_ID = int(raw_admin)
+
+# CHANNEL_ID
+CHANNEL_ID = os.getenv("CHANNEL_ID") or "@your_channel"
 
 # Инициализация бота
 logging.basicConfig(level=logging.INFO)
