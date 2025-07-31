@@ -247,7 +247,6 @@ async def admin_panel(message: types.Message):
 @dp.callback_query(lambda c: c.data == "admin_add_signal")
 async def admin_add_signal_start(callback: types.CallbackQuery):
 await callback.message.answer("📥 Введите сигнал в формате:\n<игра> | <сигнал>")
-<игра> | <сигнал>")
     await bot.session.storage.set_data(callback.from_user.id, {"awaiting_signal": True})
 
 @dp.message(lambda msg: msg.from_user.id in ADMIN_IDS)
@@ -314,7 +313,6 @@ async def old_show_templates(callback: types.CallbackQuery):
         text += f"🎮 {tpl['game']} — {tpl['signal']} в {tpl['time']}\n"
     await callback.message.answer(text)
     await callback.message.answer("➕ Чтобы добавить шаблон, пришли:
-<игра> | <сигнал> | <время (HH:MM)>")
     await bot.session.storage.set_data(callback.from_user.id, {"awaiting_template": True})
 
 @dp.message(lambda msg: msg.from_user.id in ADMIN_IDS)
@@ -354,7 +352,6 @@ async def show_templates(callback: types.CallbackQuery):
         ])
     await callback.message.answer(text, reply_markup=keyboard)
     await callback.message.answer("➕ Чтобы добавить шаблон, пришли:
-<игра> | <сигнал> | <время (HH:MM)>")
     await bot.session.storage.set_data(callback.from_user.id, {"awaiting_template": True})
 
 def load_templates():
