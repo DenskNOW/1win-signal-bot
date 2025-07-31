@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()       # читает .env в корне проекта
-API_TOKEN = os.getenv("TOKEN")
+API_TOKEN = os.getenv("8480410720:AAHfJ9hd-_aCetvn987BaMmBje2IoGrAhAw")
 
 import logging
 import sqlite3
