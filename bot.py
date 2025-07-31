@@ -246,7 +246,7 @@ async def admin_panel(message: types.Message):
 
 @dp.callback_query(lambda c: c.data == "admin_add_signal")
 async def admin_add_signal_start(callback: types.CallbackQuery):
-    await callback.message.answer("📥 Введите сигнал в формате:
+await callback.message.answer("📥 Введите сигнал в формате:\n<игра> | <сигнал>")
 <игра> | <сигнал>")
     await bot.session.storage.set_data(callback.from_user.id, {"awaiting_signal": True})
 
