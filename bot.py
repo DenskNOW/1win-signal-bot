@@ -4,9 +4,9 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 import os
 
-API_TOKEN = os.getenv("TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "123456789"))
-CHANNEL_ID = os.getenv("CHANNEL_ID", "@your_channel")
+API_TOKEN = os.getenv("8480410720:AAHfJ9hd-_aCetvn987BaMmBje2IoGrAhAw")
+ADMIN_ID = int(os.getenv("8298051618", "123456789"))
+CHANNEL_ID = os.getenv("@trghfssh", "@your_channel")
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN, parse_mode="HTML")
